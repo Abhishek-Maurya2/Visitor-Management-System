@@ -51,7 +51,7 @@ export default function PreApprovalForm() {
         <CardTitle>Pre-approve Visit</CardTitle>
         <CardDescription>Schedule a visit in advance.</CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className='flex flex-row flex-wrap gap-2 items-start justify-around'>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="visitorName">Visitor Name</Label>
@@ -61,6 +61,7 @@ export default function PreApprovalForm() {
               required
               value={formData.visitorName}
               onChange={handleChange}
+              placeholder="Full Name"
             />
           </div>
           <div className="space-y-2">
@@ -72,6 +73,7 @@ export default function PreApprovalForm() {
               required
               value={formData.visitorEmail}
               onChange={handleChange}
+              placeholder="Email Address"
             />
           </div>
           <div className="space-y-2">
@@ -83,6 +85,7 @@ export default function PreApprovalForm() {
               required
               value={formData.visitorPhone}
               onChange={handleChange}
+              placeholder="Phone Number"
             />
           </div>
           <div className="space-y-2">
@@ -123,6 +126,8 @@ export default function PreApprovalForm() {
               />
             </div>
           </div>
+        </CardContent>
+        <CardFooter className="flex flex-col space-y-4">
           <div className="flex items-center space-x-4">
             <Button type="button" variant="outline">
               <Camera className="mr-2 h-4 w-4" />
@@ -138,8 +143,6 @@ export default function PreApprovalForm() {
               </div>
             )}
           </div>
-        </CardContent>
-        <CardFooter>
           <Button type="submit" className="w-full">
             <CalendarCheck className="mr-2 h-4 w-4" />
             Create Pre-approval

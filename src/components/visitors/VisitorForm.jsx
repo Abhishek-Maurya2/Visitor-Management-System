@@ -16,7 +16,37 @@ export default function VisitorForm({ onSubmit }) {
     hostEmployee: '',
     hostDepartment: '',
     companyName: '',
+    photoUrl: '',
   });
+
+  const capturePhoto = async () => {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.createElement('video');
+        video.style.display = 'none';
+        document.body.appendChild(video);
+        video.srcObject = stream;
+        await video.play();
+        // Wait for video to initialize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = canvas.toDataURL('image/png');
+        setFormData(prev => ({ ...prev, photoUrl: imageData }));
+        video.pause();
+        stream.getTracks().forEach(track => track.stop());
+        document.body.removeChild(video);
+      } catch (err) {
+        console.error("Error capturing photo:", err);
+      }
+    } else {
+      alert("Camera not supported");
+    }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -25,7 +55,7 @@ export default function VisitorForm({ onSubmit }) {
       id: Math.random().toString(36).substr(2, 9),
       checkInTime: new Date().toISOString(),
       status: 'pending',
-      photoUrl: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
+      photoUrl: formData.photoUrl || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
     });
   };
 
@@ -52,6 +82,7 @@ export default function VisitorForm({ onSubmit }) {
                 required
                 value={formData.fullName}
                 onChange={handleChange}
+                placeholder="Full Name"
               />
             </div>
             <div className="space-y-2">
@@ -63,9 +94,11 @@ export default function VisitorForm({ onSubmit }) {
                 required
                 value={formData.email}
                 onChange={handleChange}
+                placeholder="Email"
               />
             </div>
           </div>
+          {/* phone number */}
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
             <Input
@@ -75,8 +108,10 @@ export default function VisitorForm({ onSubmit }) {
               required
               value={formData.phone}
               onChange={handleChange}
+              placeholder="Phone Number"
             />
           </div>
+          {/* purpose */}
           <div className="space-y-2">
             <Label htmlFor="purpose">Purpose of Visit</Label>
             <Select name="purpose" onValueChange={(value) => handleChange({ target: { name: 'purpose', value } })}>
@@ -91,6 +126,7 @@ export default function VisitorForm({ onSubmit }) {
               </SelectContent>
             </Select>
           </div>
+          {/* host details */}
           <div className='flex flex-row gap-2'>
             <div className="space-y-2">
               <Label htmlFor="hostEmployee">Host Employee</Label>
@@ -100,6 +136,7 @@ export default function VisitorForm({ onSubmit }) {
                 required
                 value={formData.hostEmployee}
                 onChange={handleChange}
+                placeholder="Host Employee"
               />
             </div>
             <div className="space-y-2">
@@ -110,10 +147,11 @@ export default function VisitorForm({ onSubmit }) {
                 required
                 value={formData.hostDepartment}
                 onChange={handleChange}
+                placeholder="Host Department"
               />
             </div>
           </div>
-
+          {/* company name */}
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name</Label>
             <Input
@@ -121,14 +159,17 @@ export default function VisitorForm({ onSubmit }) {
               name="companyName"
               value={formData.companyName}
               onChange={handleChange}
+              placeholder="Company Name"
             />
           </div>
 
         </CardContent>
         {/* right */}
         <CardFooter className="flex flex-col gap-2">
-
-          <Button type="button" variant="outline">
+          <img src={formData.photoUrl} alt="Visitor Photo" className="w-40 h-40 rounded-full" />
+          <Button type="button" variant="outline"
+            onClick={() => capturePhoto()}
+          >
             <Camera className="mr-2 h-4 w-4" />
             Capture Photo
           </Button>

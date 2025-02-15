@@ -49,7 +49,7 @@ export default function DashboardPage() {
         </TabsContent>
         {/* pre-approve section */}
         <TabsContent value="pre-approve">
-          <div className="max-w-lg mx-auto">
+          <div className="">
             <PreApprovalForm />
           </div>
         </TabsContent>
