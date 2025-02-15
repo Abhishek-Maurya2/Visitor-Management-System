@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import RegisterPage from './pages/RegisterPage'; // New: Register page
 import useStore from './store/useStore';
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" />} />
+        <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
         <Route
           path="/*"
           element={

@@ -1,5 +1,3 @@
-"use client"
-
 import React from "react"
 import { Check, X, Clock, QrCode, LogOut, Calendar, AlertTriangle, LogIn } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
@@ -16,18 +14,23 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "sonner"
 
-export default function VisitorList({ visitors }) {
+export default function VisitorList() {
+  const user = useStore((state) => state.user)
+  const getVisitorsForHost = useStore((state) => state.getVisitorsForHost)
+  const visitors = getVisitorsForHost(user)
+
   const [selectedRecord, setSelectedRecord] = React.useState(null)
   const [showQRCode, setShowQRCode] = React.useState(false)
   const updateVisitorStatus = useStore((state) => state.updateVisitorStatus)
   const checkoutVisitor = useStore((state) => state.checkoutVisitor)
   const checkinPreApproval = useStore((state) => state.checkinPreApproval)
   const checkoutPreApproval = useStore((state) => state.checkoutPreApproval)
-  const user = useStore((state) => state.user)
 
   const handleApprove = (visitorId) => {
     updateVisitorStatus(visitorId, "approved")
+    toast.success("Visitor approved successfully")
   }
 
   const handleReject = (visitorId) => {
@@ -302,16 +305,16 @@ export default function VisitorList({ visitors }) {
             return (
               <TableRow key={record.id}>
                 <TableCell>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-col flex-wrap sm:flex-row gap-4 items-center">
                     <Avatar>
                       <AvatarImage src={record.photoUrl} alt="Visitor" />
                       <AvatarFallback>
                         {isVisitor(record) ? record.fullName.charAt(0) : record.visitorName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="text-center sm:text-start">
                       <div className="font-medium">{isVisitor(record) ? record.fullName : record.visitorName}</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 break-all">
                         {isVisitor(record) ? record.companyName : record.visitorEmail}
                       </div>
                     </div>
@@ -319,23 +322,31 @@ export default function VisitorList({ visitors }) {
                 </TableCell>
                 <TableCell>{record.purpose}</TableCell>
                 <TableCell>{record.hostEmployee}</TableCell>
+                {/* time */}
                 <TableCell>
                   {isVisitor(record) ? (
                     <>
                       <div>
-                        In: {record.checkInTime ? new Date(record.checkInTime).toLocaleString() : "Not checked in"}
+                        {record.checkInTime ? new Date(record.checkInTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' +
+                          new Date(record.checkInTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : "Not checked in"}
                       </div>
-                      <div>Out: {record.checkOutTime ? new Date(record.checkOutTime).toLocaleString() : "-"}</div>
+                      <div className="border-2 border-gray-500 ms-2 rounded-full h-8 w-0" />
+                      <div>{record.checkOutTime ? new Date(record.checkOutTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' +
+                        new Date(record.checkOutTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : "-"}</div>
                     </>
                   ) : (
                     <>
-                      <div>Start: {new Date(record.startTime).toLocaleString()}</div>
-                      <div>End: {new Date(record.endTime).toLocaleString()}</div>
+                      <div>{new Date(record.startTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' +
+                        new Date(record.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
+                      <div className="border-2 border-gray-500 ms-2 rounded-full h-8 w-0" />
+                      <div>{new Date(record.endTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' +
+                        new Date(record.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</div>
                     </>
                   )}
                 </TableCell>
+                {/* badge */}
                 <TableCell>
-                  <Badge variant="outline" className={getStatusColor(status)}>
+                  <Badge variant="outline" className={getStatusColor(status) + "flex flex-wrap justify-center items-center"}>
                     {getStatusIcon(status)}
                     <span className="ml-1">{status}</span>
                   </Badge>

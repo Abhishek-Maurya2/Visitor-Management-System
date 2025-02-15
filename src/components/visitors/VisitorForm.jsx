@@ -5,23 +5,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from 'sonner';
+import useStore from "@/store/useStore";
 
 export default function VisitorForm({ onSubmit }) {
-  // form data
+  // form data with new field for selectedHostId
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
     purpose: '',
-    hostEmployee: '',
-    hostDepartment: '',
+    hostEmployee: '', // will be set automatically
+    hostDepartment: '', // will be set automatically
+    selectedHostId: '',
     companyName: '',
-    photoUrl: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
+    photoUrl: '',
   });
 
-  // state to track streaming status
-  const [isStreaming, setIsStreaming] = useState(false);
+  const hosts = useStore(state => state.hosts);
   const videoRef = useRef(null);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // start camera and stream video
   const startCamera = async () => {
@@ -41,7 +44,6 @@ export default function VisitorForm({ onSubmit }) {
     }
   };
 
-  // capture a snapshot from the stream
   const captureSnapshot = () => {
     const video = videoRef.current;
     if (!video) {
@@ -55,7 +57,6 @@ export default function VisitorForm({ onSubmit }) {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = canvas.toDataURL('image/png');
     setFormData(prev => ({ ...prev, photoUrl: imageData }));
-    // stop video stream
     const stream = video.srcObject;
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
@@ -63,7 +64,6 @@ export default function VisitorForm({ onSubmit }) {
     setIsStreaming(false);
   };
 
-  // stop camera without capturing a photo
   const stopCamera = () => {
     const video = videoRef.current;
     if (video && video.srcObject) {
@@ -73,8 +73,37 @@ export default function VisitorForm({ onSubmit }) {
     }
   };
 
+  const handleHostChange = (e) => {
+    const selectedId = e.target.value;
+    const selectedHost = hosts.find(h => h.id === selectedId);
+    if (selectedHost) {
+      setFormData(prev => ({
+        ...prev,
+        selectedHostId: selectedId,
+        hostEmployee: selectedHost.name,
+        hostDepartment: selectedHost.department,
+      }));
+    }
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.photoUrl) {
+      toast.error("Please capture a photo of the visitor");
+      return;
+    }
+    // Validate all fields including host selection
+    for (const key in formData) {
+      if (!formData[key] && key !== 'selectedHostId') {
+        toast.error("Please fill all fields");
+        return;
+      }
+    }
+    
     onSubmit({
       ...formData,
       id: Math.random().toString(36).substr(2, 9),
@@ -82,10 +111,6 @@ export default function VisitorForm({ onSubmit }) {
       status: 'pending',
       photoUrl: formData.photoUrl,
     });
-  };
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   return (
@@ -101,40 +126,17 @@ export default function VisitorForm({ onSubmit }) {
           <div className='flex flex-row gap-2'>
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                name="fullName"
-                required
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="Full Name"
-              />
+              <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleChange} placeholder="Full Name" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Email"
-              />
+              <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" />
             </div>
           </div>
           {/* phone number */}
           <div className="space-y-2">
             <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              required
-              value={formData.phone}
-              onChange={handleChange}
-              placeholder="Phone Number"
-            />
+            <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} placeholder="Phone Number" />
           </div>
           {/* purpose */}
           <div className="space-y-2">
@@ -151,47 +153,26 @@ export default function VisitorForm({ onSubmit }) {
               </SelectContent>
             </Select>
           </div>
-          {/* host details */}
-          <div className='flex flex-row gap-2'>
-            <div className="space-y-2">
-              <Label htmlFor="hostEmployee">Host Employee</Label>
-              <Input
-                id="hostEmployee"
-                name="hostEmployee"
-                required
-                value={formData.hostEmployee}
-                onChange={handleChange}
-                placeholder="Host Employee"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="hostDepartment">Host Department</Label>
-              <Input
-                id="hostDepartment"
-                name="hostDepartment"
-                required
-                value={formData.hostDepartment}
-                onChange={handleChange}
-                placeholder="Host Department"
-              />
-            </div>
+          {/* host selection replaces manual host fields */}
+          <div className="space-y-2">
+            <Label htmlFor="host">Select Host</Label>
+            <select id="host" name="selectedHostId" value={formData.selectedHostId} onChange={handleHostChange}>
+              <option value="">Select a host</option>
+              {hosts.map(h => (
+                <option key={h.id} value={h.id}>
+                  {h.name} ({h.department})
+                </option>
+              ))}
+            </select>
           </div>
           {/* company name */}
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name</Label>
-            <Input
-              id="companyName"
-              name="companyName"
-              value={formData.companyName}
-              onChange={handleChange}
-              placeholder="Company Name"
-            />
+            <Input id="companyName" name="companyName" value={formData.companyName} onChange={handleChange} placeholder="Company Name" />
           </div>
-
         </CardContent>
         {/* right */}
         <CardFooter className="flex flex-col gap-2">
-          {/* Always render the video element and control its visibility */}
           <video
             ref={videoRef}
             className="w-40 h-40 rounded-full"
@@ -201,7 +182,7 @@ export default function VisitorForm({ onSubmit }) {
           />
           {!isStreaming && (
             <img
-              src={formData.photoUrl}
+              src={formData.photoUrl || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop'}
               alt="Visitor Photo"
               className="w-40 h-40 rounded-full"
             />

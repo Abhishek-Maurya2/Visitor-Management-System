@@ -45,7 +45,7 @@ export default function DashboardPage() {
         </TabsContent>
         {/* list section */}
         <TabsContent value="list">
-          <VisitorList visitors={visibleVisitors} />
+          <VisitorList />
         </TabsContent>
         {/* pre-approve section */}
         <TabsContent value="pre-approve">

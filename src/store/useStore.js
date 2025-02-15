@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -7,22 +8,53 @@ const useStore = create(
       // Auth state
       isAuthenticated: false,
       user: null,
+      // New hosts array
+      hosts: [],
+      // Updated login: check admin and lookup registered hosts
       login: (username, password) => {
-        if (
-          username === "admin" ||
-          username === "hostA" ||
-          username === "hostB"
-        ) {
-          if (password === "password") {
-            set({ isAuthenticated: true, user: username });
-            return true;
-          }
+        const state = get();
+        // Allow admin with fixed credentials.
+        if (username === "admin" && password === "password") {
+          set({ isAuthenticated: true, user: username });
+          toast.success("Logged in successfully");
+          return true;
         }
+        // For hosts, search the registered hosts array.
+        const foundHost = state.hosts.find(
+          (host) =>
+            host.name.toLowerCase() === username.toLowerCase() &&
+            host.password === password
+        );
+        if (foundHost) {
+          set({ isAuthenticated: true, user: foundHost.name });
+          toast.success("Logged in successfully");
+          return true;
+        }
+        toast.error("Invalid username or password");
         return false;
       },
       logout: () => {
         set({ isAuthenticated: false, user: null });
       },
+
+      // Updated register: add new host to the hosts array
+      register: (hostData) =>
+        set((state) => ({
+          hosts: [
+            ...state.hosts,
+            {
+              id: Math.random().toString(36).substr(2, 9),
+              name: hostData.name,
+              email: hostData.email,
+              phone: hostData.contact,
+              imageUrl: hostData.image,
+              department: hostData.department,
+              password: hostData.password,
+            },
+          ],
+          isAuthenticated: true,
+          user: hostData.name,
+        })),
 
       // Visitor state: maintain only hashmaps keyed by hostEmployee (in lowercase)
       visitorsByHost: {},
@@ -32,22 +64,24 @@ const useStore = create(
       addVisitor: (visitor) =>
         set((state) => {
           const host = visitor.hostEmployee.toLowerCase();
-          const newVisitorsByHost = { ...state.visitorsByHost };
-          newVisitorsByHost[host] = newVisitorsByHost[host]
-            ? [...newVisitorsByHost[host], visitor]
-            : [visitor];
-          return { visitorsByHost: newVisitorsByHost };
+          return {
+            visitorsByHost: {
+              ...state.visitorsByHost,
+              [host]: [...(state.visitorsByHost[host] || []), visitor],
+            },
+          };
         }),
 
       // add preApproval: update the preApprovalsByHost hashmap only
       addPreApproval: (preApproval) =>
         set((state) => {
           const host = preApproval.hostEmployee.toLowerCase();
-          const newPreApprovalsByHost = { ...state.preApprovalsByHost };
-          newPreApprovalsByHost[host] = newPreApprovalsByHost[host]
-            ? [...newPreApprovalsByHost[host], preApproval]
-            : [preApproval];
-          return { preApprovalsByHost: newPreApprovalsByHost };
+          return {
+            preApprovalsByHost: {
+              ...state.preApprovalsByHost,
+              [host]: [...(state.preApprovalsByHost[host] || []), preApproval],
+            },
+          };
         }),
 
       // get all visitors for a host using the hashmaps
@@ -76,9 +110,7 @@ const useStore = create(
                     ...visitor,
                     status,
                     checkInTime:
-                      status === "approved"
-                        ? new Date().toISOString()
-                        : visitor.checkInTime,
+                      status === "approved" ? new Date().toISOString() : visitor.checkInTime,
                   }
                 : visitor
             );
@@ -109,14 +141,15 @@ const useStore = create(
         set((state) => {
           const newPreApprovalsByHost = { ...state.preApprovalsByHost };
           for (const host in newPreApprovalsByHost) {
-            newPreApprovalsByHost[host] = newPreApprovalsByHost[host].map((preApproval) =>
-              preApproval.id === preApprovalId
-                ? {
-                    ...preApproval,
-                    status: "checked-in",
-                    checkInTime: new Date().toISOString(),
-                  }
-                : preApproval
+            newPreApprovalsByHost[host] = newPreApprovalsByHost[host].map(
+              (preApproval) =>
+                preApproval.id === preApprovalId
+                  ? {
+                      ...preApproval,
+                      status: "checked-in",
+                      checkInTime: new Date().toISOString(),
+                    }
+                  : preApproval
             );
           }
           return { preApprovalsByHost: newPreApprovalsByHost };
@@ -127,14 +160,15 @@ const useStore = create(
         set((state) => {
           const newPreApprovalsByHost = { ...state.preApprovalsByHost };
           for (const host in newPreApprovalsByHost) {
-            newPreApprovalsByHost[host] = newPreApprovalsByHost[host].map((preApproval) =>
-              preApproval.id === preApprovalId
-                ? {
-                    ...preApproval,
-                    status: "used",
-                    checkOutTime: new Date().toISOString(),
-                  }
-                : preApproval
+            newPreApprovalsByHost[host] = newPreApprovalsByHost[host].map(
+              (preApproval) =>
+                preApproval.id === preApprovalId
+                  ? {
+                      ...preApproval,
+                      status: "used",
+                      checkOutTime: new Date().toISOString(),
+                    }
+                  : preApproval
             );
           }
           return { preApprovalsByHost: newPreApprovalsByHost };

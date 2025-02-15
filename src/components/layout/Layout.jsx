@@ -10,10 +10,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { toast } from 'sonner';
 
 export default function Layout({ children }) {
   const user = useStore((state) => state.user);
   const logout = useStore((state) => state.logout);
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully!');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,7 +39,7 @@ export default function Layout({ children }) {
                 <DropdownMenuContent>
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
