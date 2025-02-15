@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 export default function PreApprovalForm() {
   const addPreApproval = useStore((state) => state.addPreApproval);
   const user = useStore((state) => state.user);
+
   const [formData, setFormData] = useState({
     visitorName: '',
     visitorEmail: '',
@@ -19,6 +20,25 @@ export default function PreApprovalForm() {
     endTime: '',
     photoUrl: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
   });
+
+  const uploadPhoto = async () => {
+    // open file picker
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFormData({ ...formData, photoUrl: e.target.result });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    fileInput.click();
+
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -128,20 +148,22 @@ export default function PreApprovalForm() {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
-          <div className="flex items-center space-x-4">
-            <Button type="button" variant="outline">
-              <Camera className="mr-2 h-4 w-4" />
-              Upload Photo
-            </Button>
+          <div className="flex flex-col gap-4 items-center space-x-4">
             {formData.photoUrl && (
-              <div className="h-10 w-10">
+              <div className="h-40 w-40">
                 <img
-                  src={formData.photoUrl || "/placeholder.svg"}
+                  src={formData.photoUrl}
                   alt="Visitor"
                   className="h-full w-full rounded-full object-cover"
                 />
               </div>
             )}
+            <Button type="button" variant="outline"
+              onClick={uploadPhoto}
+            >
+              <Camera className="mr-2 h-4 w-4" />
+              Upload Photo
+            </Button>
           </div>
           <Button type="submit" className="w-full">
             <CalendarCheck className="mr-2 h-4 w-4" />

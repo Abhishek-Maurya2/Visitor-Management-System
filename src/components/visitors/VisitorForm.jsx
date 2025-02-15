@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Camera, UserCheck } from 'lucide-react';
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function VisitorForm({ onSubmit }) {
   // form data
@@ -16,37 +16,62 @@ export default function VisitorForm({ onSubmit }) {
     hostEmployee: '',
     hostDepartment: '',
     companyName: '',
-    photoUrl: '',
+    photoUrl: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
   });
 
-  const capturePhoto = async () => {
+  // state to track streaming status
+  const [isStreaming, setIsStreaming] = useState(false);
+  const videoRef = useRef(null);
+
+  // start camera and stream video
+  const startCamera = async () => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.createElement('video');
-        video.style.display = 'none';
-        document.body.appendChild(video);
-        video.srcObject = stream;
-        await video.play();
-        // Wait for video to initialize
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL('image/png');
-        setFormData(prev => ({ ...prev, photoUrl: imageData }));
-        video.pause();
-        stream.getTracks().forEach(track => track.stop());
-        document.body.removeChild(video);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+          setIsStreaming(true);
+        }
       } catch (err) {
-        console.error("Error capturing photo:", err);
+        console.error("Error starting camera:", err);
       }
     } else {
       alert("Camera not supported");
     }
-  }
+  };
+
+  // capture a snapshot from the stream
+  const captureSnapshot = () => {
+    const video = videoRef.current;
+    if (!video) {
+      console.error("Video reference is null");
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = canvas.toDataURL('image/png');
+    setFormData(prev => ({ ...prev, photoUrl: imageData }));
+    // stop video stream
+    const stream = video.srcObject;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setIsStreaming(false);
+  };
+
+  // stop camera without capturing a photo
+  const stopCamera = () => {
+    const video = videoRef.current;
+    if (video && video.srcObject) {
+      const stream = video.srcObject;
+      stream.getTracks().forEach(track => track.stop());
+      setIsStreaming(false);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -55,7 +80,7 @@ export default function VisitorForm({ onSubmit }) {
       id: Math.random().toString(36).substr(2, 9),
       checkInTime: new Date().toISOString(),
       status: 'pending',
-      photoUrl: formData.photoUrl || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
+      photoUrl: formData.photoUrl,
     });
   };
 
@@ -166,18 +191,43 @@ export default function VisitorForm({ onSubmit }) {
         </CardContent>
         {/* right */}
         <CardFooter className="flex flex-col gap-2">
-          <img src={formData.photoUrl} alt="Visitor Photo" className="w-40 h-40 rounded-full" />
-          <Button type="button" variant="outline"
-            onClick={() => capturePhoto()}
-          >
-            <Camera className="mr-2 h-4 w-4" />
-            Capture Photo
-          </Button>
-
-          <Button type="submit" className="w-full">
-            <UserCheck className="mr-2 h-4 w-4" />
-            Register Visitor
-          </Button>
+          {/* Always render the video element and control its visibility */}
+          <video
+            ref={videoRef}
+            className="w-40 h-40 rounded-full"
+            autoPlay
+            muted
+            style={{ display: isStreaming ? 'block' : 'none' }}
+          />
+          {!isStreaming && (
+            <img
+              src={formData.photoUrl}
+              alt="Visitor Photo"
+              className="w-40 h-40 rounded-full"
+            />
+          )}
+          <div className="flex flex-col gap-2">
+            {!isStreaming ? (
+              <Button type="button" variant="outline" onClick={startCamera}>
+                <Camera className="mr-2 h-4 w-4" />
+                Start Camera
+              </Button>
+            ) : (
+              <>
+                <Button type="button" variant="outline" onClick={captureSnapshot}>
+                  <Camera className="mr-2 h-4 w-4" />
+                  Capture Photo
+                </Button>
+                <Button type="button" variant="outline" onClick={stopCamera}>
+                  Stop Camera
+                </Button>
+              </>
+            )}
+            <Button type="submit" className="w-full">
+              <UserCheck className="mr-2 h-4 w-4" />
+              Register Visitor
+            </Button>
+          </div>
         </CardFooter>
       </form>
     </Card>
